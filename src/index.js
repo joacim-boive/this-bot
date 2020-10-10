@@ -9,6 +9,12 @@ const { chromium } = require('playwright');
 
     const {user, pass, timeout=2000, url='https://u4pp.u4a.se/FN667500P/tenant/login'} = args;
 
+    if(!user || !pass){
+        console.error('You have to provide both "user" and "pass"-params');
+        console.info('Launch like this: npm start -- --user=YourUserName --pass=YouPassword')
+        return;
+    }
+
     const browser = await chromium.launch({
         headless: false,
         viewport: { width: 1280, height: 1024 },
