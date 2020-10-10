@@ -36,8 +36,9 @@ const { chromium } = require('playwright');
 
     do {
         try{
-            //Found Something!
             await page.click('[id="offerPanelReplyBtn"]', {timeout});
+
+            //If we managed to click and not throw an error - Found Something!
             await okSound(page);
             isTrue = false;
         }catch(e){}
