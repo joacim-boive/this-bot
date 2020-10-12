@@ -1,6 +1,7 @@
 const args = require('yargs').argv;
 const okSound = require('./audio/ok');
 const errorSound = require('./audio/error');
+const login = require("./login");
 
 const { chromium } = require('playwright');
 
@@ -30,15 +31,7 @@ const { chromium } = require('playwright');
     // Block unnecessary requests to increase performance
     await page.route(/(\.png$)|(\.jpg$)|(\.woff$)/, route => route.abort());
 
-    await page.goto(url);
-
-    await page.fill('input[aria-label="Användarnamn"]', user);
-    await page.fill('input[aria-label="Lösenord"]', pass);
-
-    await Promise.all([
-        page.waitForNavigation({waitUntil:'domcontentloaded'}),
-        page.click('form[role="form"] >> text=/.*Logga in.*/')
-    ]);
+    await login({page, url, user, pass});
 
     do {
         try{
@@ -51,7 +44,24 @@ const { chromium } = require('playwright');
 
         try{
             await page.reload({waitUntil:'domcontentloaded'});
-            await page.waitForSelector('.user-name');
+
+            await Promise.all([
+                page.waitForSelector('.fn-footer', {state:'attached'}),
+                page.waitForNavigation({ waitUntil: 'domcontentloaded' })
+            ]);
+
+
+            const isLoggedIn = await page.evaluate(() => {
+                return document.querySelector('.user-name')
+            });
+
+            if(!isLoggedIn){
+                //You have been logged out - too tight reloads?
+                console.warn('You are spamming the site! Increase reload times to avoid being logged out and possibly blocked!');
+                await login({page, url, user, pass});
+            }
+
+
         }catch(e){
             //Something went wrong!
             await errorSound(page);
