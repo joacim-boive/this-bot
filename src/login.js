@@ -1,7 +1,7 @@
 const login = async ({page, url, user, pass}) => {
-    let offers = url.split('/')
-    offers[offers.length -1] = 'offers';
-    offers = offers.join('/');
+    // let offers = url.split('/')
+    // offers[offers.length -1] = 'offers';
+    // offers = offers.join('/');
 
     await page.goto(url);
 
@@ -13,7 +13,7 @@ const login = async ({page, url, user, pass}) => {
         page.click('form[role="form"] >> text=/.*Logga in.*/')
     ]);
 
-    await page.goto(offers);
+    // await page.goto(offers);
 }
 
 module.exports = login;
