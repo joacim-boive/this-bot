@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "playwright": "^1.4.2",
+    "playwright": "^1.5.2",
     "playwright-cli": "^0.5.2",
     "yargs": "^16.0.3"
   }
