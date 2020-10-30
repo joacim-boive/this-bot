@@ -39,7 +39,15 @@ const {chromium} = require('playwright');
             "body": null,
             "method": "GET",
             "mode": "cors"
-        }).then(response => response.json())
+        }).then(response => {
+            if (response.ok) {
+                return response.json()
+            } else {
+                return Promise.reject({
+                    status: response.status,
+                    statusText: response.statusText
+                })
+            }})
             .then(data => (data.value.length))
             .catch(error => {
                 console.log('error is', error);
