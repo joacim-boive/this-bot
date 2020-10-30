@@ -16,6 +16,9 @@ const {chromium} = require('playwright');
         return;
     }
 
+    const getRandomNumber = (min = 1000, max = 2000) =>
+        min + Math.floor(Math.random() * max);
+
     const checkOffers = async (isTrue) => {
         try {
             await page.click('ul.media-list a', {timeout});
@@ -29,16 +32,19 @@ const {chromium} = require('playwright');
         return false;
     }
 
-    const hasOffers = async () => (await page.evaluate(async() => {
-        const response = await fetch("https://u4pp.u4a.se/FN667500P/api/odata/Tenant/Offers?$expand=LeaseOutCase($expand=MainImage,Details,Address,Descriptions($filter=(LanguageCode%20eq%20%27SV%27))),CurrentViewing&$orderby=CurrentViewing/LastReplyDate%20desc&$top=3", {
+    const hasOffers = async () => (await page.evaluate(async () => {
+        return await fetch("https://u4pp.u4a.se/FN667500P/api/odata/Tenant/Offers?$expand=LeaseOutCase($expand=MainImage,Details,Address,Descriptions($filter=(LanguageCode%20eq%20%27SV%27))),CurrentViewing&$orderby=CurrentViewing/LastReplyDate%20desc&$top=3", {
             "referrer": "https://u4pp.u4a.se/FN667500P/tenant/",
             "referrerPolicy": "strict-origin-when-cross-origin",
             "body": null,
             "method": "GET",
             "mode": "cors"
-        });
-        const offers = await response.json();
-        return offers?.value.length > 0;
+        }).then(response => response.json())
+            .then(data => (data.value.length))
+            .catch(error => {
+                console.log('error is', error);
+                return null;
+            });
     }));
 
     const browser = await chromium.launch({
@@ -62,23 +68,11 @@ const {chromium} = require('playwright');
     await login({page, url, user, pass});
 
     let hasFoundOffers = false;
+    let isError = false;
 
     do {
-        hasFoundOffers = await checkOffers();
-
-        if(hasFoundOffers) return;
-
-        try {
-            let isOffersAvailable = await hasOffers();
-
-            while(!isOffersAvailable){
-                isOffersAvailable = await new Promise(resolve => (
-                    setTimeout(async () =>{
-                    resolve(await hasOffers())
-                }, 1000)));
-
-                if(isOffersAvailable) console.info('Offer is available!');
-            }
+        if(isError) {
+            isError = false;
 
             await page.reload({waitUntil: 'domcontentloaded'});
 
@@ -86,7 +80,6 @@ const {chromium} = require('playwright');
                 page.waitForSelector('.fn-footer', {state: 'attached'}),
                 page.waitForNavigation({waitUntil: 'domcontentloaded'})
             ]);
-
 
             isLoggedIn = await page.evaluate(() => {
                 return document.querySelector('.user-name')
@@ -96,6 +89,43 @@ const {chromium} = require('playwright');
                 //You have been logged out - too tight reloads?
                 console.warn('You are spamming the site! Increase reload times to avoid being logged out and possibly blocked!');
                 await login({page, url, user, pass});
+            }
+        }
+
+        hasFoundOffers = await checkOffers();
+
+        if (hasFoundOffers) return;
+
+        try {
+            let isOffersAvailable = await hasOffers();
+
+            while (!isOffersAvailable) {
+                if(isError) continue;
+
+                try{
+                    isOffersAvailable = await new Promise(resolve => (
+                        setTimeout(async () => {
+                            resolve(await hasOffers())
+                        }, getRandomNumber())));
+
+                    if(isOffersAvailable === null){
+                        isError = true;
+                        isOffersAvailable = true;
+                        continue;
+                    }
+                }catch(e){
+                    console.error(e);
+                    console.info('Reloading browser!');
+                    isError = true;
+                    isOffersAvailable = true;
+                    continue;
+                }
+
+                if (isOffersAvailable) console.info('Offer is available!');
+                reloadCount++;
+
+                console.clear();
+                console.log('Reloaded: ', reloadCount);
             }
 
             reloadCount++;
