@@ -5,6 +5,24 @@ const login = require("./login");
 
 const {chromium} = require('playwright');
 
+const getRandomNumber = (min = 1000, max = 2000) =>
+    min + Math.floor(Math.random() * max);
+
+const checkOffers = async () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            await page.click('ul.media-list a', {timeout});
+            await page.click('#createExpressionOfInterestButton', {timeout});
+
+            await okSound(page);
+            resolve(true);
+
+        } catch (e) {
+        }
+        resolve(false);
+    })
+}
+
 (async () => {
     let isTrue = true;
 
@@ -16,29 +34,26 @@ const {chromium} = require('playwright');
         return;
     }
 
-    const getRandomNumber = (min = 1000, max = 2000) =>
-        min + Math.floor(Math.random() * max);
-
-    const checkOffers = async (isTrue) => {
-        try {
-            await page.click('ul.media-list a', {timeout});
-            await page.click('#createExpressionOfInterestButton', {timeout});
-
-            await okSound(page);
-            return true;
-
-        } catch (e) {
-        }
-        return false;
-    }
-
     const hasOffers = async () => (await page.evaluate(async () => {
-        return await fetch("https://u4pp.u4a.se/FN667500P/api/odata/Tenant/Offers?$expand=LeaseOutCase($expand=MainImage,Details,Address,Descriptions($filter=(LanguageCode%20eq%20%27SV%27))),CurrentViewing&$orderby=CurrentViewing/LastReplyDate%20desc&$top=3", {
-            "referrer": "https://u4pp.u4a.se/FN667500P/tenant/",
+        return await fetch("https://u4pp.u4a.se/FN667500P/api/odata/Tenant/PublishEntries?$expand=LeaseOutCase($expand=Address,MainImage,Descriptions($filter=(LanguageCode%20eq%20%27SV%27)))&$orderby=LeaseOutCase/Address/StreetAddress&$count=true&$filter=(ContractType%20eq%20TenantModels.ContractType%27Residence%27)&$top=10", {
+            "headers": {
+                "accept": "application/json;q=0.9, */*;q=0.1",
+                "accept-language": "en-GB,en;q=0.9",
+                "cache-control": "no-cache",
+                "content-language": "sv",
+                "odata-maxversion": "4.0",
+                "pragma": "no-cache",
+                "prefer": "return=representation",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin"
+            },
+            "referrer": "https://u4pp.u4a.se/FN667500P/tenant/?t=2&q=%7B%7D&p=1",
             "referrerPolicy": "strict-origin-when-cross-origin",
             "body": null,
             "method": "GET",
-            "mode": "cors"
+            "mode": "cors",
+            "credentials": "include"
         }).then(response => {
             if (response.ok) {
                 return response.json()
@@ -47,7 +62,8 @@ const {chromium} = require('playwright');
                     status: response.status,
                     statusText: response.statusText
                 })
-            }})
+            }
+        })
             .then(data => (data.value.length))
             .catch(error => {
                 console.log('error is', error);
@@ -79,7 +95,7 @@ const {chromium} = require('playwright');
     let isError = false;
 
     do {
-        if(isError) {
+        if (isError) {
             isError = false;
 
             await page.reload({waitUntil: 'domcontentloaded'});
@@ -108,20 +124,20 @@ const {chromium} = require('playwright');
             let isOffersAvailable = await hasOffers();
 
             while (!isOffersAvailable) {
-                if(isError) continue;
+                if (isError) continue;
 
-                try{
+                try {
                     isOffersAvailable = await new Promise(resolve => (
                         setTimeout(async () => {
                             resolve(await hasOffers())
                         }, getRandomNumber())));
 
-                    if(isOffersAvailable === null){
+                    if (isOffersAvailable === null) {
                         isError = true;
                         isOffersAvailable = true;
                         continue;
                     }
-                }catch(e){
+                } catch (e) {
                     console.error(e);
                     console.info('Reloading browser!');
                     isError = true;
