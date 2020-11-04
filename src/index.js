@@ -39,6 +39,7 @@ const {chromium} = require('playwright');
     do {
         try {
             await page.click('ul.media-list a', {timeout});
+            await page.click('#createExpressionOfInterestButton', {timeout});
 
             await okSound(page);
             isTrue = false;
