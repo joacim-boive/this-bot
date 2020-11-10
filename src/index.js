@@ -1,3 +1,4 @@
+const fs= require('fs');
 const args = require('yargs').argv;
 const okSound = require('./audio/ok');
 const errorSound = require('./audio/error');
@@ -46,7 +47,10 @@ const run = async () => {
 
     try {
 
+        let html = '';
         do {
+            html = '';
+            link = '';
 
             if(reloadCount === maxReload){
                 await browser.release();
@@ -68,9 +72,13 @@ const run = async () => {
                     link = await address.textContent();
 
                     if (!blocked.has(link)) {
+                        html = await page.innerHTML('html');
                         await page.click('ul.media-list a', {timeout});
+                        html = await page.innerHTML('html');
                         await page.click('#createExpressionOfInterestButton', {timeout});
+                        html = await page.innerHTML('html');
                         await page.click('#confirmButton', {timeout});
+                        html = await page.innerHTML('html');
 
                         await okSound(page);
                         isTrue = false;
@@ -78,8 +86,11 @@ const run = async () => {
                 }
             } catch (e) {
                 blocked.set(link, true);
-
                 messages.push('Failed to process:', link);
+                fs.writeFile(link + '.html', html, err => {
+                    if(err) {console.log(err);}
+                    messages.push('created debug html file:', link+'.html');
+                })
             }
 
             try {
