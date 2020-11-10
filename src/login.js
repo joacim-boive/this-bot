@@ -3,7 +3,7 @@ const login = async ({page, url, user, pass}) => {
     // offers[offers.length -1] = 'offers';
     // offers = offers.join('/');
 
-    await page.goto(url);
+    await page.goto(url+'/login');
 
     await page.fill('input[aria-label="Användarnamn"]', user);
     await page.fill('input[aria-label="Lösenord"]', pass);
